@@ -1,3 +1,43 @@
+# Mario Tennis: Recompiled, on the web
+
+> [!WARNING]
+> **This is n64hub/MarioTennisRecomp-web, a fork, not MarioTennisRecomp.** Its `main` branch is Ieatzcrayonz's
+> [MarioTennisRecomp](https://github.com/Ieatzcrayonz/MarioTennisRecomp) moved onto
+> [RecompFrontend](https://github.com/N64Recomp/RecompFrontend) and built into a web page (WebGPU, through
+> [N64Recomp-browser](https://github.com/n64hub/N64Recomp-browser)), and everything on it past Ieatzcrayonz's commits
+> was written by AI (Claude). It is not made, endorsed or supported by MarioTennisRecomp's author: nothing here is
+> offered upstream, and please don't take issues with this fork to them. Building it: [BUILDING.md](BUILDING.md).
+>
+> This port is here to build out and test N64Recomp-browser's web support on another game than the one it was written
+> for: what it turns up is fixed there where it can be, so every recomp's page gets the fix.
+
+**Play it in the browser: https://n64hub.com/mario-tennis/**, with your own dump of Mario Tennis (USA, NM8E), picked
+in the launcher and kept in the browser. It needs WebGPU (Chrome or Edge 113 and up, or Firefox). The page is built
+from this branch and published with N64Recomp-browser's `tools/publish_page.sh`, so it can be a commit or two behind.
+
+## What this fork changes
+
+- The launcher and menus are RecompFrontend's, which every N64Recomp-browser page uses, in place of the copy of
+  Zelda 64: Recompiled's that upstream carries (and its sunny court launcher screen with it). `lib/rt64`,
+  `lib/N64ModernRuntime` and `lib/RecompFrontend` are upstream's at the commits N64Recomp-browser's web forks are built
+  on, submodules here, patched by `lib-patches/apply.cmake`: the game's own change to RT64 first, then
+  N64Recomp-browser's `patches/`, for the native build too.
+- The game's code is recompiled when it is built (`tools/recompile.sh`), as upstream's development build does it, and
+  not from the player's ROM as the program starts, as its release build does: a page can't make code at run time.
+  So upstream's changes to N64Recomp's live recompiler and to the runtime for it are left out.
+- `lib-patches/rt64.patch` is upstream's change to RT64 without its diagnostics: the players' shadows, the images the
+  game draws and then samples (shadows, the speed board, the smash replay) read from RDRAM, and two crash fixes. In
+  place of its merged copy to RAM, which kept the game's heap from being drawn over, the program turns on rt64-web's
+  late copy, which keeps what the CPU wrote too (`src/main/main.cpp`).
+- Upstream's own desktop options are left out: the choice of DirectX 12 or Vulkan (RT64 picks), the CRT shaders
+  through librashader, and the Stretch aspect ratio. Its widescreen culling for Expand and its centring of the 304-wide
+  menus (`src/game/`) are kept.
+- The page takes no mods (a browser can't load recompiled code at run time) and builds the game's shaders before it
+  draws with them, from `src/rt64_shaders.txt`.
+
+What was played on the page and how it measured is in [BUILDING.md](BUILDING.md#what-was-played).
+
+
 # Mario Tennis: Recompiled
 
 A native PC port of **Mario Tennis (N64, USA)**, made with [N64Recomp](https://github.com/N64Recomp/N64Recomp)
