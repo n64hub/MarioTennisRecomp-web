@@ -1,0 +1,1274 @@
+{
+ "page": "MarioTennisRecompiled.html",
+ "header": [
+  "Mario Tennis' regular plan for play_page.mjs, 2-3 minutes with every timeout counted: the launcher, Load ROM once the",
+  "page has its shader list (Chrome builds the whole list behind the launcher and says when it is done, and a click while",
+  "it builds is lost; Firefox builds none there, and says so as the launcher comes up), the opening (the airship over the",
+  "stadium: the program's \"code segment rom 0x00C6C320\" line), Start every 3.5 s through it until the title (the menus'",
+  "code back at 0x800E8000, over the opening's), then the menus as a player goes through them, 3.5 s apart, as the menus",
+  "take no press while a screen slides in: Start, then A for 1 Player, Mario, Exhibition, Singles, one set of two games,",
+  "Luigi at Normal, and A on the Hard Court until the match's code is in (the opening's word at 0x800E2000 gone). Then",
+  "100 s of the match on the console's own clock (0x80049a98, its VI count, 60 a second; the game's frame counter runs at",
+  "half its menus' rate in a match): A every second, which serves (a press while he is ready tosses, the next hits;",
+  "0.6-1.2 s after the toss hits, 1.5 s comes after he has caught the ball, and the first press after a point comes while",
+  "the players walk back and does nothing) and swings, through the points, score screens and replays."
+ ],
+ "load": [
+  [
+   "until",
+   "RT64: all \\d+ prebuilt shaders built|once the game draws",
+   45000
+  ],
+  [
+   "wait",
+   3000
+  ]
+ ],
+ "setup": [
+  [
+   "rom",
+   628,
+   364
+  ],
+  [
+   "wait",
+   3000
+  ]
+ ],
+ "start": [
+  [
+   "click",
+   628,
+   364
+  ],
+  [
+   "until",
+   "rom 0x00C6C320",
+   60000
+  ]
+ ],
+ "play": [
+  [
+   "pressUntil",
+   "Enter",
+   "Enter",
+   13,
+   150,
+   3500,
+   "n64r(0x800E8000) === 0x0803A017 && n64r(0x800E2000) === 0x08038E78",
+   90000
+  ],
+  [
+   "wait",
+   4000
+  ],
+  [
+   "hold",
+   "Enter",
+   "Enter",
+   13,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   3500
+  ],
+  [
+   "shot",
+   "court-select.png"
+  ],
+  [
+   "pressUntil",
+   "Space",
+   " ",
+   32,
+   150,
+   3500,
+   "n64r(0x800E2000) !== 0x08038E78",
+   30000
+  ],
+  [
+   "clock",
+   "n64r(0x80049a98)",
+   60
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "shot",
+   "match-1.png"
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "shot",
+   "match-2.png"
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "hold",
+   "Space",
+   " ",
+   32,
+   150
+  ],
+  [
+   "wait",
+   850
+  ],
+  [
+   "shot",
+   "match-3.png"
+  ]
+ ]
+}
