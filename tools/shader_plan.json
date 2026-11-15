@@ -18,7 +18,8 @@
   "Bowser Stage's lava court with its items; piranha, Piranha Challenge; doubles, a doubles match on the Hard Court",
   "(Mario, Luigi, Baby Mario and Peach); demo, the title's attract demo and its victory scenes. Not recorded: other",
   "characters' and unlocked courts' own combiners, if any, the later cups, the end of a set or a tournament past the time",
-  "played, and the main menu's other entries."
+  "played, and the main menu's other entries. The last four lines of match are the page's plays'",
+  "(tools/play_plan_extended.json, past the set's end into the next match): the shaders they logged as missed."
  ],
  "load": [
   [

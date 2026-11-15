@@ -2,8 +2,9 @@
  "page": "MarioTennisRecompiled.html",
  "header": [
   "Mario Tennis' extended plan for play_page.mjs, 5 minutes: tools/play_plan.json's (its header says how it reaches the",
-  "match) with 3.3 minutes of the match in place of 100 s: a set's games, their score screens and replays, for a long",
-  "play at 3840 wide (the web port list's W9) or any other that needs more of a match than the regular plan."
+  "match) with 3.3 minutes of A every second in place of 100 s: the one-set match ends after about 100 s, and the presses",
+  "go back through character select into another, for a long play at 3840 wide (the web port list's W9) or any other that",
+  "needs more of a match than the regular plan."
  ],
  "load": [
   [

@@ -84,8 +84,9 @@ to a match on each court and into each mode. A configure that ran before the lis
 
 `tools/play_plan.json` is the page's regular play, 2-3 minutes with every timeout counted, which N64Recomp-browser's
 `tools/play_page.mjs` plays to measure the page: the menus to Singles against Luigi on the Hard Court, and 100 s of
-the match. `tools/play_plan_extended.json`, under 5 minutes, plays 3.3 minutes of the same match, for a long play.
-Each plan's header says what it plays.
+the match. `tools/play_plan_extended.json`, under 5 minutes, presses A every second for 3.3 minutes, for a long play:
+the one-set match ends after about 100 s, and the presses go back through character select into another. Each plan's
+header says what it plays.
 
 ## What was played
 

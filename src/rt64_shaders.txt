@@ -15,7 +15,8 @@
 # Bowser Stage's lava court with its items; piranha, Piranha Challenge; doubles, a doubles match on the Hard Court
 # (Mario, Luigi, Baby Mario and Peach); demo, the title's attract demo and its victory scenes. Not recorded: other
 # characters' and unlocked courts' own combiners, if any, the later cups, the end of a set or a tournament past the time
-# played, and the main menu's other entries.
+# played, and the main menu's other entries. The last four lines of match are the page's plays'
+# (tools/play_plan_extended.json, past the set's end into the next match): the shaders they logged as missed.
 
 0f0a4004 00000c30 fcffffff fffcfc7e 04cb540b
 00504244 00008c30 fcffffff fffff7fb 0000000b
@@ -150,6 +151,10 @@ section match
 00552078 0008ac00 fcffffff fffcf279 0ccb5400
 0c192230 001b2cc0 fc117fff fffffc38 1806008c
 0c192230 001bac00 fc117fff fffdfc38 1806008c
+0f0a4001 0008ac00 fc157e2a fffff7fb 0ccb5408
+0f0a700c 00008cf0 fcffffff fffcf279 0333320b
+0f0a4004 00000c30 fc30fe61 fffffdfe 04cb540b
+0f0a4345 00100cf0 fc157ec0 f1fff278 0487550b
 section tournament
 00504244 00008c30 fcffffff fffcf279 04cb540b
 005510c4 0000bc30 fcffffff fffcf279 04cb540b
