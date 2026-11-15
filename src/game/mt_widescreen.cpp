@@ -10,7 +10,7 @@
 #include <atomic>
 
 #include "ultramodern/config.hpp"
-#include "recomp_ui.h"
+#include "recompui/recompui.h"
 
 namespace {
     std::atomic<float> cull_x_scale{1.0f};

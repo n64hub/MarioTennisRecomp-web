@@ -1,14 +1,15 @@
 #!/bin/sh
-# Regenerate everything the build consumes from the ROM. Run from the project root:
-#   sh tools/recompile.sh "../Mario Tennis (USA).z64"
+# Recompiles the game from its ROM, everything the build takes from it: the recomp image (build_assets/, the ROM with
+# every code segment decompressed and appended) and the symbols (tools/gen_symbols.py), the game's code
+# (RecompiledFuncs/, N64Recomp mt.us.toml) and its audio microcode (rsp/aspMain.cpp, RSPRecomp aspMain.us.toml).
+# Run from the repository's root, with N64Recomp and RSPRecomp built from lib/N64ModernRuntime/N64Recomp after
+# lib-patches/apply.cmake and copied there (BUILDING.md):
+#
+#   sh tools/recompile.sh "<path to Mario Tennis (USA).z64>"
+#
+# tools/check_branches.py and tools/find_spins.py check the recompiled code and keep mt.us.toml's spin hooks, when the
+# config or the symbols change; the build doesn't need them.
 set -e
-ROM="${1:-../Mario Tennis (USA).z64}"
-python tools/make_recomp_h.py
-python tools/gen_symbols.py "$ROM"
-python tools/check_branches.py | tail -1
-python tools/find_spins.py | tail -1
-rm -rf RecompiledFuncs && mkdir RecompiledFuncs
-../src/N64Recomp/build/N64Recomp.exe "${MT_CONFIG:-mt.us.toml}" | grep -v "^\[Info\]" || true
-../src/N64Recomp/build/RSPRecomp.exe aspMain.us.toml
-# The pinned N64ModernRuntime predates SectionTableEntry::got_ram_addr; this game has no GOT.
-sed -i 's/, \.got_ram_addr = std::nullopt//' RecompiledFuncs/recomp_overlays.inl
+python3 tools/gen_symbols.py "$1"
+./N64Recomp mt.us.toml
+./RSPRecomp aspMain.us.toml

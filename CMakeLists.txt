@@ -9,14 +9,13 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-everything /W4")
 endif()
 
-# Opt out of constexpr mutex constructor on windows to prevent vcredist issues
+# Opt out of constexpr mutex constructor on windows to prevent vcruntime mismatch crashes
 if (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
 endif()
@@ -25,21 +24,32 @@ if (APPLE)
     enable_language(OBJC OBJCXX)
 endif()
 
+# Emscripten: threads (SharedArrayBuffer), wasm exceptions (RmlUi, the runtime), wasm SIMD (hlslpp's backend, the
+# auto-vectorizer) and tail calls (recomp.h's RECOMP_TAIL_CALL in the recompiled code) for every target. xxHash's
+# NEON path through Emscripten's arm_neon.h doesn't compile in C++.
+if (EMSCRIPTEN)
+    add_compile_options(-pthread -fwasm-exceptions -msimd128 -mtail-call)
+    add_compile_options("-DXXH_HAS_INCLUDE(x)=0")
+    add_link_options(-pthread -fwasm-exceptions -mtail-call)
+    # ccache when it is on PATH (BUILDING.md, "The web page").
+    include(${CMAKE_SOURCE_DIR}/lib/N64Recomp-browser/frontend/build_speed.cmake)
+    # The shaders the page specializes at build time, the boot's before the game starts and the rest in sections as
+    # the game first draws them (src/rt64_shaders.txt says how it was recorded).
+    if (EXISTS ${CMAKE_SOURCE_DIR}/src/rt64_shaders.txt)
+        set(RT64_PREBUILT_SHADER_LIST ${CMAKE_SOURCE_DIR}/src/rt64_shaders.txt)
+    endif()
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     option(RECOMP_FLATPAK "Configure the build for Flatpak compatibility." OFF)
 endif()
 
-# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-if (WIN32)
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/lib/")
-endif()
 
 set(RT64_STATIC TRUE)
 set(RT64_SDL_WINDOW_VULKAN TRUE)
@@ -48,40 +58,46 @@ add_compile_definitions(HLSL_CPU)
 if (RECOMP_FLATPAK)
     add_compile_definitions(RECOMP_FLATPAK)
 endif()
+if (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # SDL 2.30's SDL_endian.h defines _m_prefetch, which clang declares as a builtin in prfchwintrin.h
+    add_compile_definitions(__PRFCHWINTRIN_H)
+endif()
+
+# lib/rt64, lib/N64ModernRuntime and lib/RecompFrontend are upstream's, at the commits N64Recomp-browser's web forks
+# are built on, with this game's lib-patches/ and then N64Recomp-browser's patches/ applied (lib-patches/apply.cmake),
+# if BUILDING.md's step hasn't already. The desktop build takes them too: the code the patched N64Recomp writes uses
+# the patched recomp.h (RECOMP_TAIL_CALL), and the web support in them is behind __EMSCRIPTEN__.
+include(${CMAKE_SOURCE_DIR}/lib-patches/apply.cmake)
+mt_apply_lib_patches(${CMAKE_SOURCE_DIR}/lib)
+
+# include/recomp.h: the patched N64Recomp's recomp.h with the game's software TLB in every memory access
+# (tools/make_recomp_h.py). include/ comes first for the game's code and its glue, so only they see it.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+execute_process(COMMAND ${Python3_EXECUTABLE} tools/make_recomp_h.py WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    RESULT_VARIABLE result)
+if (NOT result EQUAL 0)
+    message(FATAL_ERROR "tools/make_recomp_h.py failed")
+endif()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/tools/make_recomp_h.py ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/N64Recomp/include/recomp.h)
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/rt64 ${CMAKE_BINARY_DIR}/rt64)
 
-# set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
 set(BUILD_SHARED_LIBS OFF)
-SET(LUNASVG_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/lunasvg)
-# set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
-SET(RMLUI_SVG_PLUGIN ON CACHE BOOL "" FORCE)
-SET(RMLUI_TESTS_ENABLED OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/RmlUi)
-target_compile_definitions(rmlui_core PRIVATE LUNASVG_BUILD_STATIC)
-
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime)
+
+# The page: N64Recomp-browser's frontend/ (the page shell, the file picker, the cross-origin service worker)
+if (EMSCRIPTEN)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/lib/N64Recomp-browser/frontend ${CMAKE_BINARY_DIR}/web_frontend)
+    target_compile_options(fmt PRIVATE -include cstdlib)
+endif()
 
 target_include_directories(rt64 PRIVATE ${CMAKE_BINARY_DIR}/rt64/src)
 
-# Mario Tennis recomp: Slang shader presets (CRT-Royale etc.) through librashader, loaded at runtime from
-# librashader.dll (build it from https://github.com/SnowflakePowered/librashader; see README). The code lives in
-# src/rt64ext and is compiled into rt64 so it can reach RT64's native D3D12 / Vulkan objects.
-target_sources(rt64 PRIVATE ${CMAKE_SOURCE_DIR}/src/rt64ext/rt64_mt_shader.cpp)
-target_include_directories(rt64 PUBLIC
-    ${CMAKE_SOURCE_DIR}/src/rt64ext
-    ${CMAKE_SOURCE_DIR}/thirdparty/librashader/include)
-
-# MT_LIVE_RECOMP: build without any recompiled game code; the exe recompiles the game's code from the
-# player's ROM at startup (src/game/mt_live.cpp). This is the configuration for public releases.
-option(MT_LIVE_RECOMP "Recompile the game code from the player's ROM at runtime" OFF)
-
-# RecompiledFuncs - Library containing the primary recompiler output
+# RecompiledFuncs: the game's code, from N64Recomp mt.us.toml (tools/build_web.sh)
 add_library(RecompiledFuncs STATIC)
 
 target_compile_options(RecompiledFuncs PRIVATE
-    # -Wno-unused-but-set-variable
     -fno-strict-aliasing
     -Wno-unused-variable
     -Wno-implicit-function-declaration
@@ -94,96 +110,59 @@ target_include_directories(RecompiledFuncs PRIVATE
     ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/N64Recomp/include
 )
 
-if (MT_LIVE_RECOMP)
-    set(FUNC_C_SOURCES "")
-    set(FUNC_CXX_SOURCES ${CMAKE_SOURCE_DIR}/src/game/mt_live_empty.c)
-else()
-    file(GLOB FUNC_C_SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/RecompiledFuncs/*.c)
-    file(GLOB FUNC_CXX_SOURCES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/RecompiledFuncs/*.cpp)
-endif()
-
+file(GLOB FUNC_C_SOURCES ${CMAKE_SOURCE_DIR}/RecompiledFuncs/*.c)
+file(GLOB FUNC_CXX_SOURCES ${CMAKE_SOURCE_DIR}/RecompiledFuncs/*.cpp)
 target_sources(RecompiledFuncs PRIVATE ${FUNC_C_SOURCES} ${FUNC_CXX_SOURCES})
 
-# Main executable
+# wasm-ld turns a call through a wrong implicit declaration into a trap, so on the web it is an error instead.
+if (EMSCRIPTEN)
+    target_compile_options(RecompiledFuncs PRIVATE -Werror=implicit-function-declaration)
+endif()
+
 add_executable(MarioTennisRecompiled)
 
 set (SOURCES
     ${CMAKE_SOURCE_DIR}/src/main/main.cpp
-    ${CMAKE_SOURCE_DIR}/src/main/support.cpp
-    ${CMAKE_SOURCE_DIR}/src/main/rt64_render_context.cpp
-
-    ${CMAKE_SOURCE_DIR}/src/game/input.cpp
-    ${CMAKE_SOURCE_DIR}/src/game/controls.cpp
     ${CMAKE_SOURCE_DIR}/src/game/config.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_game.cpp
-    ${CMAKE_SOURCE_DIR}/src/game/mt_debug_stubs.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_libultra.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_tlb.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_dldump.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_dlfix.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_prof.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_widescreen.cpp
-
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_renderer.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_state.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_launcher.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_config.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_prompt.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_config_sub_menu.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_color_hack.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_rml_hacks.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_elements.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_mod_details_panel.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_mod_installer.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_mod_menu.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_api.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_api_events.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_api_images.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/ui_utils.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/util/hsv.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/core/ui_context.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_button.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_clickable.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_container.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_element.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_image.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_label.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_radio.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_scroll_container.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_slider.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_span.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_style.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_text_input.cpp
-    ${CMAKE_SOURCE_DIR}/src/ui/elements/ui_toggle.cpp
-
-    ${CMAKE_SOURCE_DIR}/src/game/mt_rsp_interp.cpp
-
-    ${CMAKE_SOURCE_DIR}/lib/RmlUi/Backends/RmlUi_Platform_SDL.cpp
+    ${CMAKE_SOURCE_DIR}/rsp/aspMain.cpp
 )
 
-if (APPLE)
-    list(APPEND SOURCES ${CMAKE_SOURCE_DIR}/src/main/support_apple.mm)
-endif()
+# mt_game.cpp includes the game's section table (RecompiledFuncs/recomp_overlays.inl), which a recompile rewrites.
+set_source_files_properties(${CMAKE_SOURCE_DIR}/src/game/mt_game.cpp PROPERTIES
+    OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/RecompiledFuncs/recomp_overlays.inl)
 
 target_include_directories(MarioTennisRecompiled PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/N64Recomp/include
-    ${CMAKE_SOURCE_DIR}/lib/concurrentqueue
-    ${CMAKE_SOURCE_DIR}/lib/GamepadMotionHelpers
-    ${CMAKE_SOURCE_DIR}/lib/RmlUi/Include
-    ${CMAKE_SOURCE_DIR}/lib/RmlUi/Backends
+    ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/thirdparty
+    ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime/thirdparty/sse2neon
     ${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib
     ${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/hlslpp/include
     ${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/dxc/inc
     ${CMAKE_SOURCE_DIR}/lib/rt64/src
     ${CMAKE_SOURCE_DIR}/lib/rt64/src/rhi
     ${CMAKE_SOURCE_DIR}/lib/rt64/src/render
-    ${CMAKE_SOURCE_DIR}/lib/freetype-windows-binaries/include
+    ${CMAKE_SOURCE_DIR}/lib/RecompFrontend/recompinput/include
+    ${CMAKE_SOURCE_DIR}/lib/RecompFrontend/recompui/include
+    ${CMAKE_SOURCE_DIR}/lib/RecompFrontend/recompui/src
     ${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/nativefiledialog-extended/src/include
-    ${CMAKE_SOURCE_DIR}/lib/SlotMap
-    ${CMAKE_BINARY_DIR}/shaders
     ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+# The launcher's thumbnail
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
+    COMMAND file_to_c ${CMAKE_SOURCE_DIR}/icons/512.png icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/icons/512.png
+)
+
+target_sources(MarioTennisRecompiled PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
     target_compile_options(MarioTennisRecompiled PRIVATE
@@ -201,12 +180,6 @@ endif()
 if (MSVC)
     # Disable identical code folding, since this breaks mod function patching as multiple functions can get merged into one.
     target_link_options(MarioTennisRecompiled PRIVATE /OPT:NOICF)
-elseif (APPLE)
-    # Use a wrapper around ld64 that respects segprot's `max_prot` value in order
-    # to make our executable memory writable (required for mod function patching)
-    target_link_options(MarioTennisRecompiled PRIVATE
-        "-fuse-ld=${CMAKE_SOURCE_DIR}/.github/macos/ld64"
-    )
 endif()
 
 if (WIN32)
@@ -218,7 +191,6 @@ if (WIN32)
         set(SDL2_VERSION "2.30.3")
     endif()
 
-    # Fetch SDL2 on windows
     FetchContent_Declare(
         sdl2
         URL https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_VERSION}/SDL2-devel-${SDL2_VERSION}-VC.zip
@@ -231,7 +203,6 @@ if (WIN32)
         ${sdl2_SOURCE_DIR}/lib/x64
     )
 
-    # Copy SDL2 and dxc DLLs to output folder as post build step
     add_custom_command(TARGET MarioTennisRecompiled POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${sdl2_SOURCE_DIR}/lib/x64/SDL2.dll"
@@ -239,27 +210,12 @@ if (WIN32)
             "${CMAKE_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxcompiler.dll"
             $<TARGET_FILE_DIR:MarioTennisRecompiled>)
 
-    # The game runs from its own folder (see main.cpp), so it needs its UI assets and controller
-    # database next to the executable.
-    add_custom_command(TARGET MarioTennisRecompiled POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:MarioTennisRecompiled>/assets"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/recompcontrollerdb.txt" $<TARGET_FILE_DIR:MarioTennisRecompiled>
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/slang-shaders" "$<TARGET_FILE_DIR:MarioTennisRecompiled>/slang-shaders")
-
-    # Slang shaders need librashader.dll next to the exe (optional: without it the Shader option does nothing).
-    # Point LIBRASHADER_DLL at a build of https://github.com/SnowflakePowered/librashader (see README).
-    set(LIBRASHADER_DLL "" CACHE FILEPATH "Path to librashader.dll, copied next to the executable")
-    if (LIBRASHADER_DLL AND EXISTS "${LIBRASHADER_DLL}")
-        add_custom_command(TARGET MarioTennisRecompiled POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${LIBRASHADER_DLL}" $<TARGET_FILE_DIR:MarioTennisRecompiled>)
-    endif()
-
     set_target_properties(
         MarioTennisRecompiled
         PROPERTIES
             LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE"
-            LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
-            LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
+            LINK_FLAGS_RELEASE "/SUBSYSTEM:CONSOLE"
+            LINK_FLAGS_RELWITHDEBINFO "/SUBSYSTEM:CONSOLE"
             LINK_FLAGS_MINSIZEREL "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
     )
 
@@ -276,32 +232,15 @@ if (APPLE)
     find_package(Threads REQUIRED)
 
     target_link_libraries(MarioTennisRecompiled PRIVATE ${CMAKE_DL_LIBS} Threads::Threads SDL2::SDL2)
-
-    include(${CMAKE_SOURCE_DIR}/.github/macos/apple_bundle.cmake)
 endif()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     find_package(SDL2 REQUIRED)
+    add_compile_definitions("PLUME_SDL_VULKAN_ENABLED")
     add_compile_definitions("RT64_SDL_WINDOW_VULKAN")
-
-    # Generate icon_bytes.c from the app icon PNG.
-    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
-        COMMAND file_to_c ${CMAKE_SOURCE_DIR}/icons/512.png icon_bytes ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.h
-        DEPENDS ${CMAKE_SOURCE_DIR}/icons/512.png
-    )
-    target_sources(MarioTennisRecompiled PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/icon_bytes.c)
-
-    message(STATUS "SDL2_FOUND = ${SDL2_FOUND}")
-    message(STATUS "SDL2_INCLUDE_DIRS = ${SDL2_INCLUDE_DIRS}")
-
     target_include_directories(MarioTennisRecompiled PRIVATE ${SDL2_INCLUDE_DIRS})
 
     find_package(Freetype REQUIRED)
-
-    message(STATUS "FREETYPE_FOUND = ${FREETYPE_FOUND}")
-    message(STATUS "FREETYPE_INCLUDE_DIRS = ${FREETYPE_INCLUDE_DIRS}")
-    message(STATUS "FREETYPE_LIBRARIES = ${FREETYPE_LIBRARIES}")
-
     include_directories(${FREETYPE_LIBRARIES})
     target_link_libraries(MarioTennisRecompiled PRIVATE ${FREETYPE_LIBRARIES} SDL2::SDL2)
 
@@ -312,29 +251,11 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(MarioTennisRecompiled PRIVATE "-latomic -static-libstdc++" ${CMAKE_DL_LIBS} Threads::Threads)
 endif()
 
-if (NOT MT_LIVE_RECOMP)
-    # Recompiled audio microcode (dev builds only; live builds interpret it from the ROM).
-    target_sources(MarioTennisRecompiled PRIVATE ${CMAKE_SOURCE_DIR}/rsp/aspMain.cpp)
-endif()
-if (MT_LIVE_RECOMP)
-    target_sources(MarioTennisRecompiled PRIVATE ${CMAKE_SOURCE_DIR}/src/game/mt_live.cpp)
-    target_compile_definitions(MarioTennisRecompiled PRIVATE MT_LIVE_RECOMP)
-    target_link_libraries(MarioTennisRecompiled PRIVATE N64Recomp LiveRecomp)
+if (WIN32)
+    add_compile_definitions(NOMINMAX)
 endif()
 
-target_link_libraries(MarioTennisRecompiled PRIVATE
-    RecompiledFuncs
-    librecomp
-    ultramodern
-    rt64
-    RmlUi::Core
-    RmlUi::Debugger
-    nfd
-    lunasvg
-)
-
-# TODO fix the rt64 CMake script so that this doesn't need to be duplicated here
-# For DXC
+# dxc, for recompui's shaders
 set (DXC_COMMON_OPTS "-I${PROJECT_SOURCE_DIR}/src")
 set (DXC_DXIL_OPTS "-Wno-ignored-attributes")
 set (DXC_SPV_OPTS "-spirv" "-fspv-target-env=vulkan1.0" "-fvk-use-dx-layout")
@@ -344,11 +265,11 @@ set (DXC_CS_OPTS "${DXC_COMMON_OPTS}" "-E" "CSMain" "-T cs_6_0")
 set (DXC_GS_OPTS "${DXC_COMMON_OPTS}" "-E" "GSMain" "-T gs_6_0")
 set (DXC_RT_OPTS "${DXC_COMMON_OPTS}" "-D" "RT_SHADER" "-T" "lib_6_3" "-fspv-target-env=vulkan1.1spirv1.4" "-fspv-extension=SPV_KHR_ray_tracing" "-fspv-extension=SPV_EXT_descriptor_indexing")
 
-if (${WIN32})
+# DXC runs on the machine that builds, which for the page (Emscripten) isn't the target.
+if (CMAKE_HOST_WIN32)
     set (DXC "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc.exe")
-    add_compile_definitions(NOMINMAX)
 else()
-    if (APPLE)
+    if (CMAKE_HOST_APPLE)
         # Apple's binary is universal, so it'll work on both x86_64 and arm64
         set (DXC "DYLD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/lib/arm64" "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/arm64/dxc-macos")
         if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
@@ -357,7 +278,7 @@ else()
             set(SPIRVCROSS "DYLD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/spirv-cross/lib/arm64" "${PROJECT_SOURCE_DIR}/lib/rt64//src/contrib/spirv-cross/bin/x64/spirv-cross")
         endif()
     else()
-        if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+        if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
             set (DXC "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/lib/x64" "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/x64/dxc-linux")
         else()
             set (DXC "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/lib/arm64" "${PROJECT_SOURCE_DIR}/lib/rt64/src/contrib/dxc/bin/arm64/dxc-linux")
@@ -365,8 +286,28 @@ else()
     endif()
 endif()
 
-build_vertex_shader(MarioTennisRecompiled "shaders/InterfaceVS.hlsl" "shaders/InterfaceVS.hlsl")
-build_pixel_shader(MarioTennisRecompiled "shaders/InterfacePS.hlsl" "shaders/InterfacePS.hlsl")
+set(RECOMP_FRONTEND_N64MODERNRUNTIME_PATH ${CMAKE_SOURCE_DIR}/lib/N64ModernRuntime)
+set(RECOMP_FRONTEND_RT64_PATH ${CMAKE_SOURCE_DIR}/lib/rt64)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/RecompFrontend)
+
+target_link_libraries(MarioTennisRecompiled PRIVATE
+    RecompiledFuncs
+    recompui
+    recompinput
+    librecomp
+    ultramodern
+    rt64
+)
+
+# The page reads the assets and the controller database from its preloaded file system.
+if (EMSCRIPTEN)
+    n64recomp_browser_frontend_page(MarioTennisRecompiled)
+    target_link_options(MarioTennisRecompiled PRIVATE
+        "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
+        "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/recompcontrollerdb.txt@/recompcontrollerdb.txt")
+else()
+    target_link_libraries(MarioTennisRecompiled PRIVATE nfd)
+endif()
 
 target_sources(MarioTennisRecompiled PRIVATE ${SOURCES})
 

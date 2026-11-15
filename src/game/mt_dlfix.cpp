@@ -14,8 +14,6 @@
 #include <utility>
 #include "recomp.h"
 
-extern "C" void rt64_set_horizontal_crop(float left, float right);   // lib/rt64 (Mario Tennis patch)
-
 namespace {
     constexpr uint32_t q(uint32_t px) { return px * 4; }          // 10.2 fixed point
     constexpr uint32_t shift = q(40);
@@ -87,9 +85,6 @@ extern "C" void mt_fixup_gfx_task(uint8_t* rdram, uint32_t task) {
         if ((w0 >> 24) == 0xED && is_narrow_scissor(w0, w1)) { narrow_frame = true; return false; }
         return true;
     });
-    // In Stretch mode the presenter shows only the narrow layout's columns (40..344 of 384), so
-    // menus fill the window too; other frames show the whole picture. No effect in other modes.
-    rt64_set_horizontal_crop(narrow_frame ? 40.0f / 384.0f : 0.0f, narrow_frame ? 344.0f / 384.0f : 1.0f);
     if (!narrow_frame) return;
 
     // Pass 2: move the layout and splice in the margin clear.

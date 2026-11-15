@@ -11,7 +11,6 @@
 #include <unordered_set>
 #include "recomp.h"
 
-extern "C" void mt_print_game_stack(const void* pc, const void* sp, size_t bytes);  // mt_prof.cpp
 
 namespace {
     constexpr uint32_t page_shift = 12;                       // 4 KiB granularity
@@ -67,9 +66,7 @@ extern "C" gpr mt_xlat_slow(gpr address) {
     {
         std::lock_guard lock{ m };
         if (reported.insert(a >> page_shift).second && reported.size() < 64) {
-            fprintf(stderr, "[mt] access to unmapped virtual address 0x%08X (caller %p)\n", a, __builtin_return_address(0));
-            int here = 0;
-            mt_print_game_stack(__builtin_return_address(0), &here, 0x4000);
+            fprintf(stderr, "[mt] access to unmapped virtual address 0x%08X\n", a);
             fflush(stderr);
         }
     }

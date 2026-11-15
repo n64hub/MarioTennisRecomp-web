@@ -5,13 +5,15 @@
 build_assets/
 RecompiledFuncs/
 rsp/aspMain.cpp
+# Made from lib/N64ModernRuntime/N64Recomp/include/recomp.h when the game is recompiled (tools/make_recomp_h.py).
+include/recomp.h
 
 # Build output and local stuff
 build/
 build-*/
 screenshots/
-lib
-lib/
 *.log
 .vs/
 release/
+__pycache__/
+.venv/

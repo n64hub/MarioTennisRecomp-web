@@ -2,14 +2,20 @@
 #define __MT_GAME_H__
 
 #include <cstdint>
+#include <string_view>
 #include "recomp.h"
 
 namespace mt {
+    inline constexpr std::u8string_view program_id = u8"MarioTennisRecompiled";
+    inline constexpr std::string_view program_name = "Mario Tennis: Recompiled";
+
     // Registers the recompiled code sections with librecomp.
     void register_overlays();
     // Runs after the runtime's 1 MiB boot copy: rebuilds RAM exactly as the cartridge boot stub
     // at 0x80300000 does (clear RAM, LZ-decompress main to 0x80031000) and sets up main's args.
     void on_init(uint8_t* rdram, recomp_context* ctx);
+    // The settings (src/game/config.cpp): RecompFrontend's tabs.
+    void init_config();
 }
 
 // Called from the hook in the game's segment loader (func_80035CC0) once a segment has been
