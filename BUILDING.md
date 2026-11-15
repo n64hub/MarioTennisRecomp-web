@@ -47,6 +47,12 @@ and writes `include/recomp.h`, the patched `recomp.h` with the game's software T
 (`tools/make_recomp_h.py`). `git apply --reverse lib-patches/rt64.patch` in `lib/rt64` takes the game's change out,
 after N64Recomp-browser's (`git apply --reverse lib/N64Recomp-browser/patches/<name>.patch`).
 
+The TLB costs the page next to nothing. A build that counted each path played the regular plan in Chrome: the game
+made about 3.1 million accesses a second through KSEG0, which take the inline compare alone, and about 49,000 through
+TLB-mapped addresses, which take the call into `src/game/mt_tlb.cpp`. In wasm the compare adds about 0.8 ns to a load
+and the call about 2 ns (a loop of loads timed in Node, with and without them), so it is under 3 ms of the game
+thread's time a second, about 0.3%.
+
 ## 4. Native
 
 ```bash
