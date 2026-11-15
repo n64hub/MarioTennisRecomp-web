@@ -25,8 +25,9 @@ from this branch and published with N64Recomp-browser's `tools/publish_page.sh`,
 - The game's code is recompiled when it is built (`tools/recompile.sh`), as upstream's development build does it, and
   not from the player's ROM as the program starts, as its release build does: a page can't make code at run time.
   So upstream's changes to N64Recomp's live recompiler and to the runtime for it are left out.
-- `lib-patches/rt64.patch` is upstream's change to RT64 without its diagnostics: the players' shadows, the images the
-  game draws and then samples (shadows, the speed board, the smash replay) read from RDRAM, and two crash fixes. In
+- `lib-patches/rt64.patch` is upstream's change to RT64 without its diagnostics: the images the game draws and then
+  samples (shadows, the speed board, the smash replay) read from RDRAM, and two crash fixes. Its shadows' depth, each
+  G_ZS_PRIM triangle at exactly its prim depth, is rt64-web's `RT64_EXACT_PRIM_DEPTH`, which `CMakeLists.txt` turns on. In
   place of its merged copy to RAM, which kept the game's heap from being drawn over, the program turns on rt64-web's
   late copy, which keeps what the CPU wrote too (`src/main/main.cpp`).
 - Upstream's own desktop options are left out: the choice of DirectX 12 or Vulkan (RT64 picks), the CRT shaders

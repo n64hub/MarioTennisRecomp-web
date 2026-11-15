@@ -1,10 +1,10 @@
 # The changes lib/rt64, lib/RecompFrontend and lib/N64ModernRuntime need, which are upstream's commits: first this
 # game's own, as a patch a project, then N64Recomp-browser's patches/ (the web support) on top of them.
 #
-# - rt64.patch: the players' shadows (a G_ZS_PRIM draw's depth exactly its prim depth), the images the game draws and
-#   then samples as textures read from RDRAM rather than through GPU tile copies (shadows, the speed board, the smash
-#   replay's frame), a texture address the RDP wraps to 24 bits, and an inverted load tile clamped. Each change's
-#   comment says what it fixes.
+# - rt64.patch: the images the game draws and then samples as textures read from RDRAM rather than through GPU tile
+#   copies (the players' shadows, the speed board, the smash replay's frame), a texture address the RDP wraps to 24
+#   bits, and an inverted load tile clamped. Each change's comment says what it fixes. The shadows' depth (a G_ZS_PRIM
+#   draw's exactly its prim depth) is rt64-web's RT64_EXACT_PRIM_DEPTH, which CMakeLists.txt turns on.
 #
 # CMakeLists.txt applies them when it configures, and tools/build_web.sh before it builds N64Recomp from
 # lib/N64ModernRuntime/N64Recomp, from the repository's root:

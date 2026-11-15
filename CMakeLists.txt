@@ -53,6 +53,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(RT64_STATIC TRUE)
 set(RT64_SDL_WINDOW_VULKAN TRUE)
+# The players' shadows: each G_ZS_PRIM triangle at exactly its prim depth (rt64-web's option, on with Emscripten).
+set(RT64_EXACT_PRIM_DEPTH ON)
 add_compile_definitions(HLSL_CPU)
 
 if (RECOMP_FLATPAK)
