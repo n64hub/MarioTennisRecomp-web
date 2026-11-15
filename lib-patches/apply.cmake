@@ -13,7 +13,8 @@
 #
 # A patch that is in already is left as it is, so running it again does nothing. What went in is kept in the
 # checkout's git dir (mt-<name>.patch), so a patch edited since (a newer commit of this repository) comes out of a
-# checkout as that copy, after N64Recomp-browser's patch on top of it, which goes back in after. git apply --reverse
+# checkout as that copy, after N64Recomp-browser's patch on top of it, which goes back in after. A copy whose patch
+# isn't in the checkout any more (put back to its commit) is dropped, and the patch goes in again. git apply --reverse
 # "$(git rev-parse --git-path mt-<name>.patch)" in a checkout takes one of this game's out by hand (after
 # N64Recomp-browser's, which lib/N64Recomp-browser/patches/apply.cmake's header says how to take out).
 
@@ -29,27 +30,49 @@ function(mt_apply_lib_patches lib)
         execute_process(COMMAND git rev-parse --path-format=absolute --git-path "n64recomp-browser-${name}"
             WORKING_DIRECTORY "${dir}" OUTPUT_VARIABLE web OUTPUT_STRIP_TRAILING_WHITESPACE)
         if (EXISTS "${copy}")
+            # In still? With the web's patch on top (its copy comes out), or alone (this one's copy comes out). A
+            # checkout put back to its commit (publish_pages.sh does when N64Recomp-browser moves) holds neither, and
+            # the copy is left from before.
+            set(web_in FALSE)
+            if (EXISTS "${web}.patch")
+                execute_process(COMMAND git apply --whitespace=nowarn --reverse --check "${web}.patch"
+                    WORKING_DIRECTORY "${dir}" RESULT_VARIABLE result OUTPUT_QUIET ERROR_QUIET)
+                if (result EQUAL 0)
+                    set(web_in TRUE)
+                endif()
+            endif()
+            set(in ${web_in})
+            if (NOT in)
+                execute_process(COMMAND git apply --whitespace=nowarn --reverse --check "${copy}"
+                    WORKING_DIRECTORY "${dir}" RESULT_VARIABLE result OUTPUT_QUIET ERROR_QUIET)
+                if (result EQUAL 0)
+                    set(in TRUE)
+                endif()
+            endif()
             file(SHA1 "${copy}" had)
             file(SHA1 "${patch}" has)
-            if (had STREQUAL has)
+            if (NOT in)
+                file(REMOVE "${copy}")
+            elseif (had STREQUAL has)
                 continue()
-            endif()
-            # Edited since it went in: the web's patch comes out (its own copy of what it changed), then the old one.
-            if (EXISTS "${web}.patch")
-                execute_process(COMMAND git apply --whitespace=nowarn --reverse "${web}.patch" WORKING_DIRECTORY "${dir}"
+            else()
+                # Edited since it went in: the web's patch comes out (its own copy of what it changed), then the old one.
+                if (web_in)
+                    execute_process(COMMAND git apply --whitespace=nowarn --reverse "${web}.patch" WORKING_DIRECTORY "${dir}"
+                        RESULT_VARIABLE result)
+                    if (NOT result EQUAL 0)
+                        message(FATAL_ERROR "can't take N64Recomp-browser's ${name}.patch out of ${dir}")
+                    endif()
+                    file(REMOVE "${web}.patch" "${web}.from" "${web}")
+                endif()
+                execute_process(COMMAND git apply --whitespace=nowarn --reverse "${copy}" WORKING_DIRECTORY "${dir}"
                     RESULT_VARIABLE result)
                 if (NOT result EQUAL 0)
-                    message(FATAL_ERROR "can't take N64Recomp-browser's ${name}.patch out of ${dir}")
+                    message(FATAL_ERROR "can't take the older lib-patches/${name}.patch out of ${dir}")
                 endif()
-                file(REMOVE "${web}.patch" "${web}.from" "${web}")
+                file(REMOVE "${copy}")
+                message(STATUS "Took the older lib-patches/${name}.patch out of ${name} (${dir})")
             endif()
-            execute_process(COMMAND git apply --whitespace=nowarn --reverse "${copy}" WORKING_DIRECTORY "${dir}"
-                RESULT_VARIABLE result)
-            if (NOT result EQUAL 0)
-                message(FATAL_ERROR "can't take the older lib-patches/${name}.patch out of ${dir}")
-            endif()
-            file(REMOVE "${copy}")
-            message(STATUS "Took the older lib-patches/${name}.patch out of ${name} (${dir})")
         else()
             # In already without a copy (by hand, or by an apply.cmake that kept none).
             execute_process(COMMAND git apply --reverse --check "${patch}" WORKING_DIRECTORY "${dir}"
