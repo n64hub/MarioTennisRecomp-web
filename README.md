@@ -26,13 +26,22 @@ from this branch and published with N64Recomp-browser's `tools/publish_page.sh`,
   not from the player's ROM as the program starts, as its release build does: a page can't make code at run time.
   So upstream's changes to N64Recomp's live recompiler and to the runtime for it are left out.
 - `lib-patches/rt64.patch` is upstream's change to RT64 without its diagnostics: the images the game draws and then
-  samples (shadows, the speed board, the smash replay) read from RDRAM, and two crash fixes. Its shadows' depth, each
-  G_ZS_PRIM triangle at exactly its prim depth, is rt64-web's `RT64_EXACT_PRIM_DEPTH`, which `CMakeLists.txt` turns on. In
-  place of its merged copy to RAM, which kept the game's heap from being drawn over, the program turns on rt64-web's
-  late copy, which keeps what the CPU wrote too (`src/main/main.cpp`).
+  samples (shadows, the speed board) read from RDRAM, its full-screen copies kept on the GPU, two crash fixes, and the
+  game's own widescreen (below). Its shadows' depth, each G_ZS_PRIM triangle at exactly its prim depth, is rt64-web's
+  `RT64_EXACT_PRIM_DEPTH`, which `CMakeLists.txt` turns on. In place of its merged copy to RAM, which kept the game's
+  heap from being drawn over, the program turns on rt64-web's late copy, which keeps what the CPU wrote too
+  (`src/main/main.cpp`).
+- Widescreen is upstream's: under Expand, the Graphics tab's default, the game draws its own wider 3D view, stretched
+  to the page, with the opening flyover at 4:3 (`src/game/mt_widescreen.cpp`). Upstream's crop of the 304-wide menus
+  to the window's width is left out: it draws the picture wider than the canvas, which WebGPU refuses, so the menus
+  keep their black sides, centred (`src/game/mt_dlfix.cpp`).
+- Upstream's Local Multiplayer setting is RecompFrontend's Assign players: up to four players, and until players are
+  assigned each pad plays a port of its own in the order the pads connected, the keyboard port 1. Its four cheats are
+  on the General tab, all Off by default.
 - Upstream's own desktop options are left out: the choice of DirectX 12 or Vulkan (RT64 picks), the CRT shaders
-  through librashader, and the Stretch aspect ratio. Its widescreen culling for Expand and its centring of the 304-wide
-  menus (`src/game/`) are kept.
+  through librashader, and the Stretch aspect ratio, and so is its change to the runtime's audio status, as the page
+  carries no runtime patch of the game's (the browser paces its sound). So are upstream's screenshots and its
+  launcher's splash picture.
 - The page takes no mods (a browser can't load recompiled code at run time) and builds the game's shaders before it
   draws with them, from `src/rt64_shaders.txt`.
 
@@ -73,9 +82,19 @@ unzip it, run `MarioTennisRecompiled.exe`, pick your ROM and press Start game. T
 code or data: the game is translated from your own ROM when it starts.
 
 ## Features
-- Runs at any resolution: 720p, 1080p, 1440p, 4K or matching the window, with widescreen stretch.
+- Runs at any resolution: 720p, 1080p, 1440p, 4K or matching the window.
+- Widescreen: Aspect Ratio **Expand** makes the game draw a wider 3D view matching your window (16:9,
+  ultrawide and so on); menus and the score display are stretched to fit. The opening airship flyover stays 4:3.
 - Controller support (including DualSense), with rumble and remappable controls.
+- Local multiplayer for up to 4 players: each controller is its own player, in the order they were connected.
+  "On + Keyboard" also makes the keyboard a player, so one controller and a keyboard can play 2-player
+  (Settings → General → Local Multiplayer).
 - Saves work as on the cartridge.
+- Bonus characters: Donkey Kong Jr. and Shy Guy are unlocked from the start.
+- Transfer Pak characters: Alex, Harry, Nina and Kate from the Game Boy Color version are on Character Select without a Transfer Pak (level 25, starting stats).
+- Optional cheats, all off by default (Settings → General): **All Courts**, **Star Characters**,
+  **All Tournaments Cleared** and **Infinite Bounces**. The first three are saved with your game
+  like normal unlocks, so they stay unlocked after you switch the cheat off.
 - A new sunny court launcher screen.
 - DirectX 12 or Vulkan (Settings → Graphics → Graphics API).
 - Optional CRT shaders from RetroArch (CRT-Royale, CRT-Royale Fast, CRT-Lottes) via librashader

@@ -16,6 +16,15 @@ namespace mt {
     void on_init(uint8_t* rdram, recomp_context* ctx);
     // The settings (src/game/config.cpp): RecompFrontend's tabs.
     void init_config();
+    // The General tab's cheats (src/game/config.cpp), which mt_bonus.cpp applies.
+    enum class Cheat : uint32_t {
+        AllCourts,
+        StarCharacters,
+        AllTournaments,
+        InfiniteBounces,
+    };
+    // Whether a cheat is On.
+    bool cheat_on(Cheat cheat);
 }
 
 // Called from the hook in the game's segment loader (func_80035CC0) once a segment has been

@@ -55,6 +55,13 @@ set(RT64_STATIC TRUE)
 set(RT64_SDL_WINDOW_VULKAN TRUE)
 # The players' shadows: each G_ZS_PRIM triangle at exactly its prim depth (rt64-web's option, on with Emscripten).
 set(RT64_EXACT_PRIM_DEPTH ON)
+# Up to four players, each a port of their own (src/main/main.cpp, get_connected_device_info): the game turns
+# RecompFrontend's single-player mode off, and plays as single-player mode until players are assigned, as with
+# Emscripten, so a player alone needn't assign their pad or keyboard first. And until then each pad plays a port of its
+# own, in the order they were connected, the keyboard port 1 (RecompFrontend-web's option): four people with four pads
+# play four players without assigning them.
+set(RECOMPINPUT_SINGLE_PLAYER_UNTIL_ASSIGNED ON)
+set(RECOMPINPUT_PADS_IN_ORDER ON)
 add_compile_definitions(HLSL_CPU)
 
 if (RECOMP_FLATPAK)
@@ -130,6 +137,7 @@ set (SOURCES
     ${CMAKE_SOURCE_DIR}/src/game/mt_libultra.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_tlb.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_dldump.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/mt_bonus.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_dlfix.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_prof.cpp
     ${CMAKE_SOURCE_DIR}/src/game/mt_widescreen.cpp

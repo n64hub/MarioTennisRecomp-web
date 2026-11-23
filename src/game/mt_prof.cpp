@@ -17,11 +17,18 @@ namespace {
     double last_task = 0;
     unsigned loads = 0, yields[3] = {};
     double load_ms = 0, yield_ms = 0;
+
+    // MT_FPS=1: once a second, graphics tasks submitted and busy-wait yields by kind (1 = idle
+    // thread, 2 = waiting for the previous graphics task): tells game slowdown from renderer slowdown.
+    const bool fps_enabled = std::getenv("MT_FPS") != nullptr;
+    unsigned fps_tasks = 0, fps_yields[3] = {};
+    double fps_start = 0;
 }
 
 extern "C" void yield_self_1ms(uint8_t* rdram);
 
 extern "C" void mt_spin_yield(uint8_t* rdram, uint32_t id) {
+    if (fps_enabled) fps_yields[id < 3 ? id : 0]++;
     if (!enabled) { yield_self_1ms(rdram); return; }
     double s = now_ms();
     yield_self_1ms(rdram);
@@ -47,6 +54,15 @@ void mt_prof_flush_events(bool print);
 extern "C" void mt_prof_event(const char* what, uint32_t arg);
 
 void mt_prof_gfx_task() {
+    if (fps_enabled) {
+        const double t = now_ms();
+        if (fps_start == 0) fps_start = t;
+        fps_tasks++;
+        if (t - fps_start >= 1000.0) {
+            fprintf(stderr, "[fps] %8.1f s: %u tasks, yields idle %u gfx %u\n", t / 1000.0, fps_tasks, fps_yields[1], fps_yields[2]);
+            fps_start = t; fps_tasks = 0; fps_yields[0] = fps_yields[1] = fps_yields[2] = 0;
+        }
+    }
     if (!enabled) return;
     double t = now_ms();
     bool late = last_task != 0 && t - last_task > 40.0;

@@ -2,9 +2,12 @@
 # game's own, as a patch a project, then N64Recomp-browser's patches/ (the web support) on top of them.
 #
 # - rt64.patch: the images the game draws and then samples as textures read from RDRAM rather than through GPU tile
-#   copies (the players' shadows, the speed board, the smash replay's frame), a texture address the RDP wraps to 24
-#   bits, and an inverted load tile clamped. Each change's comment says what it fixes. The shadows' depth (a G_ZS_PRIM
-#   draw's exactly its prim depth) is rt64-web's RT64_EXACT_PRIM_DEPTH, which CMakeLists.txt turns on.
+#   copies (the players' shadows, the speed board), while its full-screen copies keep theirs (the pause, score and
+#   replay backgrounds, the menus' transitions), a texture address the RDP wraps to 24 bits, an inverted load tile
+#   clamped, and the game's own widescreen: while the game widens its 3D camera under Expand, the frame drawn at 4:3 and
+#   stretched to the window, and the opening flyover shown at 4:3 (src/game/mt_widescreen.cpp). Each change's comment
+#   says what it fixes. The shadows' depth (a G_ZS_PRIM draw's exactly its prim depth) is rt64-web's
+#   RT64_EXACT_PRIM_DEPTH, which CMakeLists.txt turns on.
 #
 # CMakeLists.txt applies them when it configures, and tools/build_web.sh before it builds N64Recomp from
 # lib/N64ModernRuntime/N64Recomp, from the repository's root:
